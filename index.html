@@ -365,24 +365,33 @@
             var player = document.getElementById("globalPlayer");
             var btn = document.getElementById("masterPauseBtn");
             var s = stations[cardSelections[slot]];
-
+        
             statSelected = "status" + (slot + 1);
-
+        
             document.getElementById("card1").classList.remove("active");
             document.getElementById("card2").classList.remove("active");
             document.getElementById("status1").style.color = "#aaaaaa";
             document.getElementById("status1").innerText = "Click to Play";
             document.getElementById("status2").style.color = "#aaaaaa";
             document.getElementById("status2").innerText = "Click to Play";
-
+        
             document.getElementById(cardId).classList.add("active");
             document.getElementById(statSelected).style.color = "#0084ff";
             document.getElementById(statSelected).innerText = "● Now Playing";
-
+        
             player.src = s.url;
             player.load();
-            player.play();
-
+        
+            var playPromise = player.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(function() {
+                    btn.innerHTML = '<div class="play-icon"></div>';
+                    btn.style.background = "#34c759";
+                    btn.style.boxShadow = "0 4px 12px rgba(52, 199, 89, 0.3)";
+                    document.getElementById(statSelected).innerText = "Click to Play";
+                });
+            }
+        
             btn.innerHTML = '<div class="pause-icon"><div class="bar"></div><div class="bar"></div></div>';
             btn.style.background = "#ff3b30";
             btn.style.boxShadow = "0 4px 12px rgba(255, 59, 48, 0.3)";
