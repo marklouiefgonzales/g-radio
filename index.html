@@ -4,21 +4,22 @@
 <!-- marksays: Another idea is a bigger pause button so it can instantly be stopped.. lalo kung may call-->
 <!-- marksays: 6/12/26 this version is cleaner and solves the button color issue dun sa pause button. -->
 <!-- marksays: 6/12/26 probably next time e may option naman to dynamically change the station from a list -->
+<!-- marksays: 6/16/26 done! cards are now dynamic. edit button per card. last selected is remembered. -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
 
-	<link rel="manifest" href="manifest.json">
-	<script>
-	  if ('serviceWorker' in navigator) {
-	    navigator.serviceWorker.register('sw.js');
-	  }
-	</script>
-	
-	<link rel="icon" type="image/png" href="icon.png">
-	<link rel="apple-touch-icon" href="icon.png">
+    <link rel="manifest" href="manifest.json">
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+      }
+    </script>
+
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
     <title>Radio Player by the Gonzales</title>
     <style>
         body {
@@ -60,6 +61,7 @@
             cursor: pointer;
             border: 2px solid transparent;
             transition: all 0.3s ease;
+            position: relative;
         }
         .player-container.active {
             border-color: #0084ff;
@@ -76,14 +78,101 @@
             margin-bottom: 30px;
             font-size: 14px;
         }
-        
-        /* New Container: Places the master audio bar and the panic button side-by-side */
+        .edit-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #333;
+            border: 1px solid #444;
+            color: #aaaaaa;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .edit-btn:hover {
+            background: #0084ff;
+            color: #fff;
+            border-color: #0084ff;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.open {
+            display: flex;
+        }
+        .modal-box {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+        }
+        .modal-box h3 {
+            color: #0084ff;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        .station-option {
+            display: flex;
+            flex-direction: column;
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .station-option:hover {
+            border-color: #0084ff;
+            background: #222630;
+        }
+        .station-option .freq {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0084ff;
+        }
+        .station-option .name {
+            font-size: 14px;
+            color: #ffffff;
+        }
+        .station-option .tagline {
+            font-size: 12px;
+            color: #aaaaaa;
+        }
+        .modal-cancel {
+            margin-top: 16px;
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #444;
+            background: transparent;
+            color: #aaaaaa;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .modal-cancel:hover {
+            background: #333;
+            color: #fff;
+        }
         .controls-row {
             display: flex;
             align-items: center;
             gap: 16px;
             width: 100%;
-            max-width: 440px; /* Expanded slightly to house both modules seamlessly */
+            max-width: 440px;
             justify-content: center;
         }
         .master-bar-box {
@@ -98,8 +187,6 @@
             outline: none;
             display: block;
         }
-        
-        /* Panic Button Layout Styles */
         .panic-btn {
             background: #ff3b30;
             color: white;
@@ -121,7 +208,6 @@
         .panic-btn:active {
             transform: scale(0.95);
         }
-        
         .explore-btn {
             display: inline-flex;
             align-items: center;
@@ -142,10 +228,6 @@
             box-shadow: 0 0 15px rgba(0, 132, 255, 0.4);
             transform: translateY(-2px);
         }
-
-
-
-        /* Force container layout alignment rules */
         .pause-icon {
             display: flex;
             gap: 6px;
@@ -154,64 +236,54 @@
             width: 20px;
             height: 24px;
         }
-        /* Draws crisp, thick, perfectly proportional white rectangle pillars */
         .pause-icon .bar {
             background-color: white;
             width: 6px;
             height: 100%;
             border-radius: 2px;
         }
-        
-        /* Draws a clean, centered vector Play triangle when paused */
         .play-icon {
             width: 0;
             height: 0;
             border-top: 12px solid transparent;
             border-bottom: 12px solid transparent;
             border-left: 20px solid white;
-            margin-left: 4px; /* Optically centers the triangle pointing right */
+            margin-left: 4px;
         }
-
-
-
-
     </style>
 </head>
 <body>
 
     <div class="main-wrapper">
-        
+
         <div class="cards-container">
-            <div class="player-container active" id="card1" onclick="playStream('https://hrmanila.radioca.st/stream', 'card1')">
-                <h2>97.9 Home Radio</h2>
-                <p>Always Be Home</p>
+            <div class="player-container active" id="card1" onclick="playStream(0, 'card1')">
+                <button class="edit-btn" onclick="openModal(0, event)">✎ Edit</button>
+                <h2 id="freq1"></h2>
+                <p id="tagline1"></p>
                 <div id="status1" style="font-size: 12px; color: #0084ff;">● Click to Play</div>
             </div>
 
-            <div class="player-container" id="card2" onclick="playStream('https://stream-285.zeno.fm/hcbrvvfd938uv', 'card2')">
-                <h2>89.9 Magic</h2>
-                <p>Today's Best Music</p>
+            <div class="player-container" id="card2" onclick="playStream(1, 'card2')">
+                <button class="edit-btn" onclick="openModal(1, event)">✎ Edit</button>
+                <h2 id="freq2"></h2>
+                <p id="tagline2"></p>
                 <div id="status2" style="font-size: 12px; color: #aaaaaa;">Click to Play</div>
             </div>
         </div>
 
-        <!-- Master Row Grid housing both the audio stream controller and your hotkey panel -->
         <div class="controls-row">
             <div class="master-bar-box">
                 <audio id="globalPlayer" controls crossorigin="anonymous" onplay="handleNativePlay()" onpause="handleNativePause()">
-                    <source id="audioSource" src="https://hrmanila.radioca.st/stream" type="audio/mpeg">
                     Your browser does not support the audio element.
                 </audio>
             </div>
-            
-            <!-- The Master Pause/Play Button -->
-		<button class="panic-btn" id="masterPauseBtn" onclick="togglePlayback()" title="Quick Pause/Play">
-    		<!-- Using pure HTML/CSS layout blocks ensures it renders identically on every screen -->
-    			<div class="pause-icon">
-        			<div class="bar"></div>
-        			<div class="bar"></div>
-    			</div>
-		</button>
+            <button class="panic-btn" id="masterPauseBtn" onclick="togglePlayback()" title="Quick Pause/Play">
+                <div class="pause-icon">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
+            </button>
         </div>
 
         <a href="https://radio-philippines.com" target="_blank" class="explore-btn">
@@ -219,98 +291,187 @@
         </a>
     </div>
 
+    <!-- Station Picker Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-box">
+            <h3>Select a Station</h3>
+            <div id="stationList"></div>
+            <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
     <script>
-	// marksays: onload value
-		
-	var statSelected = 'status1';
-	togglePlayback();
-	document.getElementById(statSelected).innerText = 'Click to Play';
-	var btn = document.getElementById('masterPauseBtn');
-	btn.innerHTML = '<div class="play-icon"></div>';
-        btn.style.background = "#34c759"; // Safe Green when paused
+
+        // ============================================================
+        // marksays: ADD OR EDIT STATIONS HERE
+        // Each station: { freq, name, tagline, url }
+        // Use double quotes for strings with apostrophes e.g. "Today's Best"
+        // ============================================================
+        var stations = [
+            { freq: "97.9",   name: "Home Radio",  tagline: "Always Be Home",        url: "https://hrmanila.radioca.st/stream" },
+            { freq: "89.9",   name: "Magic",        tagline: "Today's Best Music",    url: "https://stream-285.zeno.fm/hcbrvvfd938uv" },
+            { freq: "99.5",   name: "RT",           tagline: "Real Talk Radio",       url: "https://stream-285.zeno.fm/rt995" },
+            { freq: "103.5",  name: "K-Lite FM",    tagline: "Easy Listening",        url: "https://stream.klite.com.ph/stream" },
+            { freq: "105.1",  name: "Crossover",    tagline: "The Music Never Stops", url: "https://crossoverfm.radioca.st/stream" },
+        ];
+        // ============================================================
+
+        var defaultSelections = [0, 1];
+        var cardSelections = loadSelections();
+        var editingCardSlot = null;
+        var statSelected = "status1";
+
+        // On load
+        renderCards();
+        var btn = document.getElementById("masterPauseBtn");
+        btn.innerHTML = '<div class="play-icon"></div>';
+        btn.style.background = "#34c759";
         btn.style.boxShadow = "0 4px 12px rgba(52, 199, 89, 0.3)";
-	
-		
+        togglePlayback();
 
 
-        function playStream(url, cardId) {
-            var player = document.getElementById('globalPlayer');
-            var btn = document.getElementById('masterPauseBtn');
+        // ── Load / Save ───────────────────────────────────────────────
 
-	    // Get the selected value
-	    if (cardId=='card1') {
-			statSelected = 'status1';
-		} else
-		{
-			statSelected = 'status2';
-		}
+        function loadSelections() {
+            var saved = localStorage.getItem("cardSelections");
+            if (saved) return JSON.parse(saved);
+            return defaultSelections.slice();
+        }
 
-            
-            // Clean up card visual styles
-            document.getElementById('card1').classList.remove('active');
-            document.getElementById('card2').classList.remove('active');
-            document.getElementById('status1').style.color = '#aaaaaa';
-            document.getElementById('status1').innerText = 'Click to Play';
-            document.getElementById('status2').style.color = '#aaaaaa';
-            document.getElementById('status2').innerText = 'Click to Play';
-            
-            // Set new active card styles
-            document.getElementById(cardId).classList.add('active');
-            document.getElementById(statSelected).style.color = '#0084ff';
-	    document.getElementById(statSelected).innerText = '● Now Playing';
+        function saveSelections() {
+            localStorage.setItem("cardSelections", JSON.stringify(cardSelections));
+        }
 
-            
-            // Inject stream directly into audio engine source element
-            player.src = url;
+
+        // ── Render cards ──────────────────────────────────────────────
+
+        function renderCards() {
+            for (var slot = 0; slot < 2; slot++) {
+                var s = stations[cardSelections[slot]];
+                var num = slot + 1;
+                document.getElementById("freq" + num).innerText = s.freq + " " + s.name;
+                document.getElementById("tagline" + num).innerText = s.tagline;
+            }
+        }
+
+
+        // ── Play by slot ──────────────────────────────────────────────
+
+        function playStream(slot, cardId) {
+            var player = document.getElementById("globalPlayer");
+            var btn = document.getElementById("masterPauseBtn");
+            var s = stations[cardSelections[slot]];
+
+            statSelected = "status" + (slot + 1);
+
+            document.getElementById("card1").classList.remove("active");
+            document.getElementById("card2").classList.remove("active");
+            document.getElementById("status1").style.color = "#aaaaaa";
+            document.getElementById("status1").innerText = "Click to Play";
+            document.getElementById("status2").style.color = "#aaaaaa";
+            document.getElementById("status2").innerText = "Click to Play";
+
+            document.getElementById(cardId).classList.add("active");
+            document.getElementById(statSelected).style.color = "#0084ff";
+            document.getElementById(statSelected).innerText = "● Now Playing";
+
+            player.src = s.url;
             player.load();
             player.play();
-            
-            // Keep button display synced to active state
+
             btn.innerHTML = '<div class="pause-icon"><div class="bar"></div><div class="bar"></div></div>';
             btn.style.background = "#ff3b30";
             btn.style.boxShadow = "0 4px 12px rgba(255, 59, 48, 0.3)";
-
-	    
         }
 
-        // Logic function handling instant master pause/play toggle commands
+
+        // ── Toggle playback ───────────────────────────────────────────
+
         function togglePlayback() {
-            var player = document.getElementById('globalPlayer');
-            var btn = document.getElementById('masterPauseBtn');
-            
+            var player = document.getElementById("globalPlayer");
+            var btn = document.getElementById("masterPauseBtn");
+
             if (player.paused) {
                 player.play();
                 btn.innerHTML = '<div class="pause-icon"><div class="bar"></div><div class="bar"></div></div>';
-                btn.style.background = "#ff3b30"; // Bright Red when playing
+                btn.style.background = "#ff3b30";
                 btn.style.boxShadow = "0 4px 12px rgba(255, 59, 48, 0.3)";
-		document.getElementById(statSelected).innerText = '● Now Playing';
+                document.getElementById(statSelected).innerText = "● Now Playing";
             } else {
                 player.pause();
                 btn.innerHTML = '<div class="play-icon"></div>';
-                btn.style.background = "#34c759"; // Safe Green when paused
+                btn.style.background = "#34c759";
                 btn.style.boxShadow = "0 4px 12px rgba(52, 199, 89, 0.3)";
-		document.getElementById(statSelected).innerText = '● Paused';
-            }	
+                document.getElementById(statSelected).innerText = "● Paused";
+            }
         }
 
 
-	function handleNativePlay() {
-        	var btn = document.getElementById('masterPauseBtn');
-        	btn.innerHTML = '<div class="pause-icon"><div class="bar"></div><div class="bar"></div></div>';
-        	btn.style.background = "#ff3b30";
-        	btn.style.boxShadow = "0 4px 12px rgba(255, 59, 48, 0.3)";
-		document.getElementById(statSelected).innerText = '● Now Playing';
-	}
+        // ── Native player events ──────────────────────────────────────
 
-	function handleNativePause() {
-        	var btn = document.getElementById('masterPauseBtn');
-        	btn.innerHTML = '<div class="play-icon"></div>';
-        	btn.style.background = "#34c759";
-        	btn.style.boxShadow = "0 4px 12px rgba(52, 199, 89, 0.3)";
-		document.getElementById(statSelected).innerText = '● Paused';
-	}
+        function handleNativePlay() {
+            var btn = document.getElementById("masterPauseBtn");
+            btn.innerHTML = '<div class="pause-icon"><div class="bar"></div><div class="bar"></div></div>';
+            btn.style.background = "#ff3b30";
+            btn.style.boxShadow = "0 4px 12px rgba(255, 59, 48, 0.3)";
+            document.getElementById(statSelected).innerText = "● Now Playing";
+        }
+
+        function handleNativePause() {
+            var btn = document.getElementById("masterPauseBtn");
+            btn.innerHTML = '<div class="play-icon"></div>';
+            btn.style.background = "#34c759";
+            btn.style.boxShadow = "0 4px 12px rgba(52, 199, 89, 0.3)";
+            document.getElementById(statSelected).innerText = "● Paused";
+        }
 
 
+        // ── Modal ─────────────────────────────────────────────────────
+
+        function openModal(slot, event) {
+            event.stopPropagation();
+            editingCardSlot = slot;
+
+            // The other card's station index — exclude it from the list
+            var otherSlot = slot === 0 ? 1 : 0;
+            var otherIndex = cardSelections[otherSlot];
+
+            var list = document.getElementById("stationList");
+            list.innerHTML = "";
+
+            for (var i = 0; i < stations.length; i++) {
+                // Skip the station already assigned to the other card
+                if (i === otherIndex) continue;
+
+                var s = stations[i];
+                var div = document.createElement("div");
+                div.className = "station-option";
+                div.innerHTML =
+                    '<span class="freq">' + s.freq + ' ' + s.name + '</span>' +
+                    '<span class="tagline">' + s.tagline + '</span>';
+                div.setAttribute("data-index", i);
+                div.onclick = selectStation;
+                list.appendChild(div);
+            }
+
+            document.getElementById("modalOverlay").classList.add("open");
+        }
+
+        function selectStation() {
+            var index = parseInt(this.getAttribute("data-index"));
+            cardSelections[editingCardSlot] = index;
+            saveSelections();
+            renderCards();
+            closeModal();
+            // Immediately play the newly selected station
+            var cardId = "card" + (editingCardSlot + 1);
+            playStream(editingCardSlot, cardId);
+        }
+
+        function closeModal() {
+            document.getElementById("modalOverlay").classList.remove("open");
+            editingCardSlot = null;
+        }
 
     </script>
 
