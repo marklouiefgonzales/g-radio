@@ -472,8 +472,12 @@
             saveSelections();
             renderCards();
             closeModal();
-            // Immediately play the newly selected station
-            playStream(editingCardSlot, "card" + (editingCardSlot + 1));
+        
+            // Small delay to let the modal close first before playing
+            var slot = editingCardSlot;
+            setTimeout(function() {
+                playStream(slot, "card" + (slot + 1));
+            }, 100);
         }
 
         function closeModal() {
