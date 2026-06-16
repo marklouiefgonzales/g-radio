@@ -427,6 +427,7 @@
             btn.innerHTML = '<div class="pause-icon"><div class="bar"></div><div class="bar"></div></div>';
             btn.style.background = "#ff3b30";
             btn.style.boxShadow = "0 4px 12px rgba(255, 59, 48, 0.3)";
+            document.getElementById(statSelected).style.color = "#0084ff";
             document.getElementById(statSelected).innerText = "● Now Playing";
         }
 
@@ -492,7 +493,9 @@
         }
 
         function handleStreamError() {
+            var player = document.getElementById("globalPlayer");
             var btn = document.getElementById("masterPauseBtn");
+            player.pause();
             btn.innerHTML = '<div class="play-icon"></div>';
             btn.style.background = "#34c759";
             btn.style.boxShadow = "0 4px 12px rgba(52, 199, 89, 0.3)";
