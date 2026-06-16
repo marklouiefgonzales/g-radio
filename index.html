@@ -281,7 +281,7 @@
 
         <div class="controls-row">
             <div class="master-bar-box">
-                <audio id="globalPlayer" controls crossorigin="anonymous" onplay="handleNativePlay()" onpause="handleNativePause()" onerror="handleStreamError()">
+                <audio id="globalPlayer" controls crossorigin="anonymous" onplay="handleNativePlay()" onpause="handleNativePause()">
                     Your browser does not support the audio element.
                 </audio>
             </div>
@@ -381,18 +381,13 @@
             document.getElementById(statSelected).style.color = "#0084ff";
             document.getElementById(statSelected).innerText = "● Now Playing";
         
+            // Remove old error listener before adding new one
+            player.removeEventListener("error", handleStreamError);
+            player.addEventListener("error", handleStreamError);
+        
             player.src = s.url;
             player.load();
-        
-            var playPromise = player.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(function() {
-                    btn.innerHTML = '<div class="play-icon"></div>';
-                    btn.style.background = "#34c759";
-                    btn.style.boxShadow = "0 4px 12px rgba(52, 199, 89, 0.3)";
-                    document.getElementById(statSelected).innerText = "Click to Play";
-                });
-            }
+            player.play();
         
             btn.innerHTML = '<div class="pause-icon"><div class="bar"></div><div class="bar"></div></div>';
             btn.style.background = "#ff3b30";
