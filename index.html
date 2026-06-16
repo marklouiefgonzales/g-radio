@@ -117,6 +117,8 @@
             width: 90%;
             max-width: 400px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+            max-height: 80vh;
+            overflow-y: auto;
         }
         .modal-box h3 {
             color: #0084ff;
@@ -138,14 +140,19 @@
             border-color: #0084ff;
             background: #222630;
         }
+        .station-option.selected {
+            border-color: #0084ff;
+            background: #222630;
+        }
+        .station-option.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
         .station-option .freq {
             font-size: 16px;
             font-weight: 600;
             color: #0084ff;
-        }
-        .station-option .name {
-            font-size: 14px;
-            color: #ffffff;
         }
         .station-option .tagline {
             font-size: 12px;
@@ -261,7 +268,7 @@
                 <button class="edit-btn" onclick="openModal(0, event)">✎ Edit</button>
                 <h2 id="freq1"></h2>
                 <p id="tagline1"></p>
-                <div id="status1" style="font-size: 12px; color: #0084ff;">● Click to Play</div>
+                <div id="status1" style="font-size: 12px; color: #0084ff;">● Now Playing</div>
             </div>
 
             <div class="player-container" id="card2" onclick="playStream(1, 'card2')">
@@ -308,11 +315,11 @@
         // Use double quotes for strings with apostrophes e.g. "Today's Best"
         // ============================================================
         var stations = [
-            { freq: "97.9",   name: "Home Radio",  tagline: "Always Be Home",        url: "https://hrmanila.radioca.st/stream" },
-            { freq: "89.9",   name: "Magic",        tagline: "Today's Best Music",    url: "https://stream-285.zeno.fm/hcbrvvfd938uv" },
-            { freq: "99.5",   name: "RT",           tagline: "Real Talk Radio",       url: "https://stream-285.zeno.fm/rt995" },
-            { freq: "103.5",  name: "K-Lite FM",    tagline: "Easy Listening",        url: "https://stream.klite.com.ph/stream" },
-            { freq: "105.1",  name: "Crossover",    tagline: "The Music Never Stops", url: "https://crossoverfm.radioca.st/stream" },
+            { freq: "97.9",  name: "Home Radio",  tagline: "Always Be Home",        url: "https://hrmanila.radioca.st/stream" },
+            { freq: "89.9",  name: "Magic",        tagline: "Today's Best Music",    url: "https://stream-285.zeno.fm/hcbrvvfd938uv" },
+            { freq: "99.5",  name: "RT",           tagline: "Real Talk Radio",       url: "https://stream-285.zeno.fm/rt995" },
+            { freq: "103.5", name: "K-Lite FM",    tagline: "Easy Listening",        url: "https://stream.klite.com.ph/stream" },
+            { freq: "105.1", name: "Crossover",    tagline: "The Music Never Stops", url: "https://crossoverfm.radioca.st/stream" },
         ];
         // ============================================================
 
@@ -321,13 +328,9 @@
         var editingCardSlot = null;
         var statSelected = "status1";
 
-        // On load
+        // On load: render cards then autoplay card1
         renderCards();
-        var btn = document.getElementById("masterPauseBtn");
-        btn.innerHTML = '<div class="play-icon"></div>';
-        btn.style.background = "#34c759";
-        btn.style.boxShadow = "0 4px 12px rgba(52, 199, 89, 0.3)";
-        togglePlayback();
+        playStream(0, "card1");
 
 
         // ── Load / Save ───────────────────────────────────────────────
@@ -432,20 +435,26 @@
             event.stopPropagation();
             editingCardSlot = slot;
 
-            // The other card's station index — exclude it from the list
-            var otherSlot = slot === 0 ? 1 : 0;
-            var otherIndex = cardSelections[otherSlot];
+            var currentIndex = cardSelections[slot];
+            var otherIndex = cardSelections[slot === 0 ? 1 : 0];
+
+            // Sort stations by freq numerically, keep original index
+            var indexed = stations.map(function(s, i) { return { s: s, i: i }; });
+            indexed.sort(function(a, b) { return parseFloat(a.s.freq) - parseFloat(b.s.freq); });
 
             var list = document.getElementById("stationList");
             list.innerHTML = "";
 
-            for (var i = 0; i < stations.length; i++) {
-                // Skip the station already assigned to the other card
+            for (var j = 0; j < indexed.length; j++) {
+                var s = indexed[j].s;
+                var i = indexed[j].i;
+
+                // Skip station already on the OTHER card
                 if (i === otherIndex) continue;
 
-                var s = stations[i];
+                var isSelected = (i === currentIndex);
                 var div = document.createElement("div");
-                div.className = "station-option";
+                div.className = "station-option" + (isSelected ? " selected" : "");
                 div.innerHTML =
                     '<span class="freq">' + s.freq + ' ' + s.name + '</span>' +
                     '<span class="tagline">' + s.tagline + '</span>';
@@ -464,8 +473,7 @@
             renderCards();
             closeModal();
             // Immediately play the newly selected station
-            var cardId = "card" + (editingCardSlot + 1);
-            playStream(editingCardSlot, cardId);
+            playStream(editingCardSlot, "card" + (editingCardSlot + 1));
         }
 
         function closeModal() {
