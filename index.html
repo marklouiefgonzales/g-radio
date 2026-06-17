@@ -259,6 +259,24 @@
             border-left: 20px solid white;
             margin-left: 4px;
         }
+        .search-box {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #444;
+            background: #121212;
+            color: #ffffff;
+            font-size: 14px;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+            outline: none;
+        }
+        .search-box:focus {
+            border-color: #0084ff;
+        }
+
+
+        
     </style>
 </head>
 <body>
@@ -304,6 +322,7 @@
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal-box">
             <h3>Select a Station</h3>
+            <input type="text" id="stationSearch" class="search-box" placeholder="🔍 Search station..." oninput="filterStations()">
             <div id="stationList"></div>
             <button class="modal-cancel" onclick="closeModal()">Cancel</button>
         </div>
@@ -503,7 +522,7 @@
                 div.onclick = selectStation;
                 list.appendChild(div);
             }
-
+            document.getElementById("stationSearch").value = "";
             document.getElementById("modalOverlay").classList.add("open");
         }
 
@@ -531,6 +550,16 @@
             document.getElementById(statSelected).style.color = "#ff3b30";
             document.getElementById(statSelected).innerText = "⚠ Stream Unavailable";
         }
+
+        function filterStations() {
+            var query = document.getElementById("stationSearch").value.toLowerCase();
+            var options = document.querySelectorAll(".station-option");
+            options.forEach(function(option) {
+                var text = option.innerText.toLowerCase();
+                option.style.display = text.includes(query) ? "flex" : "none";
+            });
+        }
+        
 
     </script>
 
