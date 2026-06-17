@@ -7,6 +7,10 @@
 <!-- marksays: 6/16/26 Done! cards are now dynamic. edit button per card. last selected is remembered. -->
 <!-- marksays: 6/17/26 Completed all the stations in Metro Manila -->
 <!-- marksays: 6/17/26 Next, I will make the stations searchable -->
+<!-- marksays: 6/17/26 Nevermind that comment, nalagyan ko na rin ng search function kasi ang haba na nung selection nung nilagay ko lahat ng stations sa Metro Manila e -->
+<!-- marksays: 6/17/26 I also added the notification display on mobile when minimized -->    
+<!-- marksays: 6/17/26 I'm tempted to add the icon of each radio station but it might make "less minimalist". I think the catch phrase / tagline should be enough. -->
+<!-- marksays: 6/17/26 I might add a share function sa future (may ginawa si Johneric mukhang ok rin e), di ko lang makita pa kung may use case ba sa kin -->    
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -442,6 +446,14 @@
             btn.style.boxShadow = "0 4px 12px rgba(255, 59, 48, 0.3)";
 
             localStorage.setItem("lastPlayingSlot", slot);
+
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: s.freq + " " + s.name,
+                    artist: s.tagline,
+                    album: "Radio Player by the Gonzales"
+                });
+            }
         }
 
 
