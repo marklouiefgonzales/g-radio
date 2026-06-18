@@ -516,6 +516,7 @@
         var sleepSecondsLeft = 0;
         var sleepCountdownInterval = null;
         var retryInterval = null;
+        var lastPlayTime = 0;
         
         // On load: render cards then autoplay last played slot
         renderCards();
@@ -632,6 +633,7 @@
         // ── Native player events ──────────────────────────────────────
         
         function handleNativePlay() {
+            lastPlayTime = Date.now();
             var btn = document.getElementById("masterPauseBtn");
             btn.innerHTML = '<div class="pause-icon"><div class="bar"></div><div class="bar"></div></div>';
             btn.style.background = "#ff3b30";
@@ -832,6 +834,7 @@
         function handleStreamStall() {
             var player = document.getElementById("globalPlayer");
             if (player.paused || streamError) return;
+            if (Date.now() - lastPlayTime < 5000) return;
         
             document.getElementById(statSelected).style.color = "#f5a623";
             document.getElementById(statSelected).innerText = "⟳ Reconnecting...";
@@ -839,8 +842,6 @@
             clearInterval(retryInterval);
             retryInterval = null;
         
-            // Just wait and let the browser recover on its own
-            // Check every second if it recovered
             retryInterval = setInterval(function() {
                 if (player.paused || streamError) {
                     clearInterval(retryInterval);
@@ -849,7 +850,6 @@
                 }
         
                 if (player.readyState >= 3) {
-                    // Stream recovered on its own
                     clearInterval(retryInterval);
                     retryInterval = null;
                     document.getElementById(statSelected).style.color = "#0084ff";
