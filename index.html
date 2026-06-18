@@ -282,25 +282,55 @@
         .search-box:focus {
             border-color: #0084ff;
         }
-        .timer-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            width: 100%;
-            max-width: 440px;
-        }
-        .timer-label {
-            font-size: 12px;
+        .sleep-timer-btn {
+            background: #1e1e1e;
             color: #aaaaaa;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            border: 1px solid #333;
+            border-radius: 30px;
+            padding: 12px 28px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
-        .timer-buttons {
+        .sleep-timer-btn:hover {
+            background: #0084ff;
+            color: #fff;
+            border-color: #0084ff;
+            box-shadow: 0 0 15px rgba(0, 132, 255, 0.4);
+            transform: translateY(-2px);
+        }
+        .timer-pill {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #222630;
+            border: 1px solid #0084ff;
+            color: #0084ff;
+            border-radius: 30px;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 16px rgba(0, 132, 255, 0.3);
+            white-space: nowrap;
+            z-index: 200;
+        }
+        .timer-pill-cancel {
+            color: #ff3b30;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .timer-pill-cancel:hover {
+            text-decoration: underline;
+        }
+        .timer-presets {
             display: flex;
             gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
         }
-        .timer-btn {
+        .timer-preset-btn {
             background: #1e1e1e;
             color: #aaaaaa;
             border: 1px solid #333;
@@ -309,28 +339,65 @@
             font-size: 13px;
             cursor: pointer;
             transition: all 0.2s ease;
+            flex: 1;
         }
-        .timer-btn:hover {
+        .timer-preset-btn:hover {
             background: #0084ff;
             color: #fff;
             border-color: #0084ff;
         }
-        .timer-active-btn {
-            background: #222630;
-            color: #0084ff;
-            border: 1px solid #0084ff;
-            border-radius: 20px;
-            padding: 10px 24px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            width: 100%;
-            max-width: 300px;
+        .timer-divider {
+            text-align: center;
+            color: #555;
+            font-size: 12px;
+            margin-bottom: 16px;
+            position: relative;
         }
-        .timer-active-btn:hover {
-            background: #ff3b30;
+        .timer-divider::before,
+        .timer-divider::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            width: 28%;
+            height: 1px;
+            background: #333;
+        }
+        .timer-divider::before { left: 0; }
+        .timer-divider::after { right: 0; }
+        .timer-dropdowns {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .timer-select {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #444;
+            background: #121212;
+            color: #ffffff;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+        .timer-select:focus {
+            border-color: #0084ff;
+        }
+        .timer-set-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            background: #0084ff;
             color: #fff;
-            border-color: #ff3b30;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+        .timer-set-btn:hover {
+            background: #006fd6;
         }
 
         
@@ -369,19 +436,51 @@
                 </div>
             </button>
         </div>
+        <!-- Start of Timer Section -->
+        <button class="sleep-timer-btn" onclick="openTimerModal()">⏱ Sleep Timer</button>
 
-        <div class="timer-section">
-            <div class="timer-label">Sleep Timer</div>
-            <div class="timer-buttons">
-                <button class="timer-btn" onclick="setTimer(15)">15m</button>
-                <button class="timer-btn" onclick="setTimer(30)">30m</button>
-                <button class="timer-btn" onclick="setTimer(60)">60m</button>
-                <button class="timer-btn" onclick="setCustomTimer()">Custom</button>
-            </div>
-            <button class="timer-active-btn" id="timerActiveBtn" onclick="cancelTimer()" style="display:none;">
-                ⏱ <span id="timerCountdown"></span> — Tap to Cancel
-            </button>
+        <div class="timer-pill" id="timerPill" style="display:none;">
+            ⏱ <span id="timerCountdown"></span> &nbsp;·&nbsp; <span class="timer-pill-cancel" onclick="cancelTimer()">Cancel</span>
         </div>
+        
+        <div class="modal-overlay" id="timerModalOverlay">
+            <div class="modal-box">
+                <h3>⏱ Sleep Timer</h3>
+                <div class="timer-presets">
+                    <button class="timer-preset-btn" onclick="applyPreset(15)">15 min</button>
+                    <button class="timer-preset-btn" onclick="applyPreset(30)">30 min</button>
+                    <button class="timer-preset-btn" onclick="applyPreset(60)">60 min</button>
+                </div>
+                <div class="timer-divider">or set custom time</div>
+                <div class="timer-dropdowns">
+                    <select id="timerHours" class="timer-select">
+                        <option value="0">0 hr</option>
+                        <option value="1">1 hr</option>
+                        <option value="2">2 hr</option>
+                        <option value="3">3 hr</option>
+                        <option value="4">4 hr</option>
+                        <option value="5">5 hr</option>
+                    </select>
+                    <select id="timerMinutes" class="timer-select">
+                        <option value="0">0 min</option>
+                        <option value="5">5 min</option>
+                        <option value="10">10 min</option>
+                        <option value="15">15 min</option>
+                        <option value="20">20 min</option>
+                        <option value="25">25 min</option>
+                        <option value="30">30 min</option>
+                        <option value="35">35 min</option>
+                        <option value="40">40 min</option>
+                        <option value="45">45 min</option>
+                        <option value="50">50 min</option>
+                        <option value="55">55 min</option>
+                    </select>
+                </div>
+                <button class="timer-set-btn" onclick="applyCustomTimer()">Set Timer</button>
+                <button class="modal-cancel" onclick="closeTimerModal()">Cancel</button>
+            </div>
+        </div>
+        <!-- End of Timer Section -->
 
         
     </div>
@@ -637,62 +736,66 @@
         }
 
         // marksays: this is the timer part
-        var sleepTimer = null;
         var sleepFadeInterval = null;
         var sleepSecondsLeft = 0;
         var sleepCountdownInterval = null;
         
-        function setTimer(minutes) {
-            cancelTimer();
-            sleepSecondsLeft = minutes * 60;
-            startTimer();
+        function openTimerModal() {
+            document.getElementById("timerHours").value = "0";
+            document.getElementById("timerMinutes").value = "30";
+            document.getElementById("timerModalOverlay").classList.add("open");
         }
         
-        function setCustomTimer() {
-            var input = prompt("Enter minutes (e.g. 45):");
-            if (input === null) return;
-            var minutes = parseInt(input);
-            if (isNaN(minutes) || minutes <= 0) {
-                alert("Please enter a valid number of minutes.");
+        function closeTimerModal() {
+            document.getElementById("timerModalOverlay").classList.remove("open");
+        }
+        
+        function applyPreset(minutes) {
+            closeTimerModal();
+            startSleepTimer(minutes * 60);
+        }
+        
+        function applyCustomTimer() {
+            var hours = parseInt(document.getElementById("timerHours").value);
+            var minutes = parseInt(document.getElementById("timerMinutes").value);
+            var totalSeconds = (hours * 3600) + (minutes * 60);
+            if (totalSeconds <= 0) {
+                alert("Please select at least 1 minute.");
                 return;
             }
-            cancelTimer();
-            sleepSecondsLeft = minutes * 60;
-            startTimer();
+            closeTimerModal();
+            startSleepTimer(totalSeconds);
         }
         
-        function startTimer() {
-            var activeBtn = document.getElementById("timerActiveBtn");
-            activeBtn.style.display = "block";
+        function startSleepTimer(seconds) {
+            cancelTimer();
+            sleepSecondsLeft = seconds;
+            document.getElementById("timerPill").style.display = "block";
             updateCountdownDisplay();
         
             sleepCountdownInterval = setInterval(function() {
                 sleepSecondsLeft--;
                 updateCountdownDisplay();
-        
-                if (sleepSecondsLeft === 30) {
-                    startFadeOut();
-                }
-        
-                if (sleepSecondsLeft <= 0) {
-                    cancelTimer();
-                }
+                if (sleepSecondsLeft === 30) startFadeOut();
+                if (sleepSecondsLeft <= 0) cancelTimer();
             }, 1000);
         }
         
         function updateCountdownDisplay() {
-            var mins = Math.floor(sleepSecondsLeft / 60);
-            var secs = sleepSecondsLeft % 60;
-            document.getElementById("timerCountdown").innerText =
-                mins + ":" + (secs < 10 ? "0" : "") + secs;
+            var h = Math.floor(sleepSecondsLeft / 3600);
+            var m = Math.floor((sleepSecondsLeft % 3600) / 60);
+            var s = sleepSecondsLeft % 60;
+            var display = "";
+            if (h > 0) display += h + "h ";
+            display += (m < 10 && h > 0 ? "0" : "") + m + "m ";
+            display += (s < 10 ? "0" : "") + s + "s";
+            document.getElementById("timerCountdown").innerText = display.trim();
         }
         
         function startFadeOut() {
             var player = document.getElementById("globalPlayer");
-            var originalVolume = player.volume;
             var steps = 30;
-            var stepSize = originalVolume / steps;
-        
+            var stepSize = player.volume / steps;
             sleepFadeInterval = setInterval(function() {
                 if (player.volume > stepSize) {
                     player.volume = Math.max(0, player.volume - stepSize);
@@ -720,8 +823,7 @@
                 btn.style.boxShadow = "0 4px 12px rgba(52, 199, 89, 0.3)";
                 document.getElementById(statSelected).innerText = "● Paused";
             }
-        
-            document.getElementById("timerActiveBtn").style.display = "none";
+            document.getElementById("timerPill").style.display = "none";
         }
         
         
