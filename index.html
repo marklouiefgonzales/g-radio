@@ -515,6 +515,7 @@
         var sleepFadeInterval = null;
         var sleepSecondsLeft = 0;
         var sleepCountdownInterval = null;
+        var retryInterval = null;
         
         // On load: render cards then autoplay last played slot
         renderCards();
@@ -572,10 +573,18 @@
             player.removeEventListener("error", handleStreamError);
             player.addEventListener("error", handleStreamError);
 
+            clearInterval(retryInterval);
+            retryInterval = null;
+            
             player.removeEventListener("stalled", handleStreamStall);
             player.removeEventListener("waiting", handleStreamStall);
-            player.addEventListener("stalled", handleStreamStall);
-            player.addEventListener("waiting", handleStreamStall);
+            
+            // Only listen for stalls after stream starts playing
+            player.addEventListener("playing", function onFirstPlay() {
+                player.removeEventListener("playing", onFirstPlay);
+                player.addEventListener("stalled", handleStreamStall);
+                player.addEventListener("waiting", handleStreamStall);
+            });
         
             player.src = s.url;
             player.load();
@@ -627,6 +636,8 @@
             btn.innerHTML = '<div class="pause-icon"><div class="bar"></div><div class="bar"></div></div>';
             btn.style.background = "#ff3b30";
             btn.style.boxShadow = "0 4px 12px rgba(255, 59, 48, 0.3)";
+            clearInterval(retryInterval);
+            retryInterval = null;
             document.getElementById(statSelected).style.color = "#0084ff";
             document.getElementById(statSelected).innerText = "● Now Playing";
         }
@@ -820,27 +831,24 @@
 
         function handleStreamStall() {
             var player = document.getElementById("globalPlayer");
+            if (player.paused || streamError) return;
         
             document.getElementById(statSelected).style.color = "#f5a623";
             document.getElementById(statSelected).innerText = "⟳ Reconnecting...";
         
-            setTimeout(function() {
-                if (!player.paused && player.readyState < 3) {
-                    var currentSrc = player.src;
-                    player.src = currentSrc;
-                    player.load();
-                    var playPromise = player.play();
-                    if (playPromise !== undefined) {
-                        playPromise.then(function() {
-                            document.getElementById(statSelected).style.color = "#0084ff";
-                            document.getElementById(statSelected).innerText = "● Now Playing";
-                        });
-                    }
-                } else {
-                    // Stream recovered on its own
-                    document.getElementById(statSelected).style.color = "#0084ff";
-                    document.getElementById(statSelected).innerText = "● Now Playing";
+            clearInterval(retryInterval);
+            retryInterval = setInterval(function() {
+                if (player.paused || streamError) {
+                    clearInterval(retryInterval);
+                    retryInterval = null;
+                    return;
                 }
+                var currentSrc = player.src;
+                player.src = currentSrc;
+                player.load();
+                player.play().catch(function() {
+                    // still failing, keep retrying
+                });
             }, 5000);
         }
         
