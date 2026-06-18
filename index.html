@@ -837,6 +837,10 @@
             document.getElementById(statSelected).innerText = "⟳ Reconnecting...";
         
             clearInterval(retryInterval);
+            retryInterval = null;
+        
+            // Just wait and let the browser recover on its own
+            // Check every second if it recovered
             retryInterval = setInterval(function() {
                 if (player.paused || streamError) {
                     clearInterval(retryInterval);
@@ -844,21 +848,14 @@
                     return;
                 }
         
-                // If already playing fine, stop retrying
-                if (player.readyState === 4 && !player.paused) {
+                if (player.readyState >= 3) {
+                    // Stream recovered on its own
                     clearInterval(retryInterval);
                     retryInterval = null;
                     document.getElementById(statSelected).style.color = "#0084ff";
                     document.getElementById(statSelected).innerText = "● Now Playing";
-                    return;
                 }
-        
-                // Still not recovered, reload
-                var currentSrc = player.src;
-                player.src = currentSrc;
-                player.load();
-                player.play().catch(function() {});
-            }, 5000);
+            }, 1000);
         }
         
     </script>
