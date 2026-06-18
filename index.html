@@ -492,7 +492,7 @@
             { freq: "99.5", name: "XFM", tagline: "Katropa Mo, Xciting!", url: "https://prox.radyoph.com/s/346e90a13a75701e0bef5fefd181872f" },
             { freq: "100.3", name: "RJFM", tagline: "The Greatest and The Latest", url: "https://stream.zeno.fm/as29d8g0g4duv" },
             { freq: "101.1", name: "Yes FM", tagline: "Solid", url: "https://azura.yesfm.com.ph/listen/yes_fm_manila/radio.mp3" },
-            { freq: "101.9", name: "MOR", tagline: "My Only Radio For Life! ", url: "https://22253.live.streamtheworld.com/MORFM_S01.mp3" },
+            { freq: "101.9", name: "MOR", tagline: "My Only Radio For Life!", url: "https://22253.live.streamtheworld.com/MORFM_S01.mp3" },
             { freq: "102.7", name: "Star FM", tagline: "It's All For You", url: "https://stream-288.surfernetwork.com/536cwdq78heuv" },
             { freq: "103.5", name: "All Radio", tagline: "All Hits, All Lite", url: "http://103.36.17.18:8000/stream" },
             { freq: "104.3", name: "Capital", tagline: "Hitback Music Nation", url: "https://stream.zeno.fm/chynu17m108uv" },
@@ -504,37 +504,40 @@
             { freq: "🇯🇲", name: "Bob Marley 🇯🇲", tagline: "Every Little Thing Is Gonna Be Alright", url: "https://nl4.mystreaming.net/er/bobmarley/icecast.audio" },
             { freq: "🎄", name: "Christmas Radio 🎄", tagline: "Playing All The Best of Christmas Songs", url: "https://us1.amfmph.com/ssl/christmasradio?1641738050672=&mp=/stream" },
         ];
-
         // ============================================================
-
+        
+        // ── Global variables ──────────────────────────────────────────
         var defaultSelections = [0, 1];
         var cardSelections = loadSelections();
         var editingCardSlot = null;
         var statSelected = "status1";
         var streamError = false;
-
-        // On load: render cards then autoplay card1
+        var sleepFadeInterval = null;
+        var sleepSecondsLeft = 0;
+        var sleepCountdownInterval = null;
+        
+        // On load: render cards then autoplay last played slot
         renderCards();
         var lastSlot = parseInt(localStorage.getItem("lastPlayingSlot") || "0");
         var lastCardId = "card" + (lastSlot + 1);
         playStream(lastSlot, lastCardId);
-
-
+        
+        
         // ── Load / Save ───────────────────────────────────────────────
-
+        
         function loadSelections() {
             var saved = localStorage.getItem("cardSelections");
             if (saved) return JSON.parse(saved);
             return defaultSelections.slice();
         }
-
+        
         function saveSelections() {
             localStorage.setItem("cardSelections", JSON.stringify(cardSelections));
         }
-
-
+        
+        
         // ── Render cards ──────────────────────────────────────────────
-
+        
         function renderCards() {
             for (var slot = 0; slot < 2; slot++) {
                 var s = stations[cardSelections[slot]];
@@ -543,10 +546,10 @@
                 document.getElementById("tagline" + num).innerText = s.tagline;
             }
         }
-
-
+        
+        
         // ── Play by slot ──────────────────────────────────────────────
-
+        
         function playStream(slot, cardId) {
             streamError = false;
             var player = document.getElementById("globalPlayer");
@@ -566,7 +569,6 @@
             document.getElementById(statSelected).style.color = "#0084ff";
             document.getElementById(statSelected).innerText = "● Now Playing";
         
-            // Remove old error listener before adding new one
             player.removeEventListener("error", handleStreamError);
             player.addEventListener("error", handleStreamError);
         
@@ -577,9 +579,9 @@
             btn.innerHTML = '<div class="pause-icon"><div class="bar"></div><div class="bar"></div></div>';
             btn.style.background = "#ff3b30";
             btn.style.boxShadow = "0 4px 12px rgba(255, 59, 48, 0.3)";
-
+        
             localStorage.setItem("lastPlayingSlot", slot);
-
+        
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.metadata = new MediaMetadata({
                     title: s.freq + " " + s.name,
@@ -588,10 +590,10 @@
                 });
             }
         }
-
-
+        
+        
         // ── Toggle playback ───────────────────────────────────────────
-
+        
         function togglePlayback() {
             if (streamError) return;
             var player = document.getElementById("globalPlayer");
@@ -611,10 +613,10 @@
                 document.getElementById(statSelected).innerText = "● Paused";
             }
         }
-
-
+        
+        
         // ── Native player events ──────────────────────────────────────
-
+        
         function handleNativePlay() {
             var btn = document.getElementById("masterPauseBtn");
             btn.innerHTML = '<div class="pause-icon"><div class="bar"></div><div class="bar"></div></div>';
@@ -623,7 +625,7 @@
             document.getElementById(statSelected).style.color = "#0084ff";
             document.getElementById(statSelected).innerText = "● Now Playing";
         }
-
+        
         function handleNativePause() {
             if (streamError) return;
             var btn = document.getElementById("masterPauseBtn");
@@ -632,31 +634,39 @@
             btn.style.boxShadow = "0 4px 12px rgba(52, 199, 89, 0.3)";
             document.getElementById(statSelected).innerText = "● Paused";
         }
-
-
-        // ── Modal ─────────────────────────────────────────────────────
-
+        
+        function handleStreamError() {
+            streamError = true;
+            var btn = document.getElementById("masterPauseBtn");
+            btn.innerHTML = '<div class="play-icon"></div>';
+            btn.style.background = "#34c759";
+            btn.style.boxShadow = "0 4px 12px rgba(52, 199, 89, 0.3)";
+            document.getElementById(statSelected).style.color = "#ff3b30";
+            document.getElementById(statSelected).innerText = "⚠ Stream Unavailable";
+        }
+        
+        
+        // ── Station modal ─────────────────────────────────────────────
+        
         function openModal(slot, event) {
             event.stopPropagation();
             editingCardSlot = slot;
-
+        
             var currentIndex = cardSelections[slot];
             var otherIndex = cardSelections[slot === 0 ? 1 : 0];
-
-            // Sort stations by freq numerically, keep original index
+        
             var indexed = stations.map(function(s, i) { return { s: s, i: i }; });
             indexed.sort(function(a, b) { return parseFloat(a.s.freq) - parseFloat(b.s.freq); });
-
+        
             var list = document.getElementById("stationList");
             list.innerHTML = "";
-
+        
             for (var j = 0; j < indexed.length; j++) {
                 var s = indexed[j].s;
                 var i = indexed[j].i;
-
-                // Skip station already on the OTHER card
+        
                 if (i === otherIndex) continue;
-
+        
                 var isSelected = (i === currentIndex);
                 var div = document.createElement("div");
                 div.className = "station-option" + (isSelected ? " selected" : "");
@@ -670,7 +680,7 @@
             document.getElementById("stationSearch").value = "";
             document.getElementById("modalOverlay").classList.add("open");
         }
-
+        
         function selectStation() {
             var index = parseInt(this.getAttribute("data-index"));
             var slot = editingCardSlot;
@@ -680,22 +690,12 @@
             playStream(slot, "card" + (slot + 1));
             closeModal();
         }
-
+        
         function closeModal() {
             document.getElementById("modalOverlay").classList.remove("open");
             editingCardSlot = null;
         }
-
-        function handleStreamError() {
-            streamError = true;
-            var btn = document.getElementById("masterPauseBtn");
-            btn.innerHTML = '<div class="play-icon"></div>';
-            btn.style.background = "#34c759";
-            btn.style.boxShadow = "0 4px 12px rgba(52, 199, 89, 0.3)";
-            document.getElementById(statSelected).style.color = "#ff3b30";
-            document.getElementById(statSelected).innerText = "⚠ Stream Unavailable";
-        }
-
+        
         function filterStations() {
             var query = document.getElementById("stationSearch").value.toLowerCase();
             var options = document.querySelectorAll(".station-option");
@@ -704,12 +704,9 @@
                 option.style.display = text.includes(query) ? "flex" : "none";
             });
         }
-
-        // marksays: this is the timer part
-        // marksays: this is the timer part
-        var sleepFadeInterval = null;
-        var sleepSecondsLeft = 0;
-        var sleepCountdownInterval = null;
+        
+        
+        // ── Sleep timer ───────────────────────────────────────────────
         
         function handleTimerBtnClick() {
             if (sleepCountdownInterval) {
@@ -728,6 +725,12 @@
         
         function closeTimerModal() {
             document.getElementById("timerModalOverlay").classList.remove("open");
+        }
+        
+        function checkTimerInputs() {
+            var hours = parseInt(document.getElementById("timerHours").value);
+            var minutes = parseInt(document.getElementById("timerMinutes").value);
+            document.getElementById("timerSetBtn").disabled = (hours === 0 && minutes === 0);
         }
         
         function applyCustomTimer() {
@@ -752,6 +755,33 @@
                 updateTimerBtn();
                 if (sleepSecondsLeft === 30) startFadeOut();
                 if (sleepSecondsLeft <= 0) timerExpired();
+            }, 1000);
+        }
+        
+        function updateTimerBtn() {
+            var h = Math.floor(sleepSecondsLeft / 3600);
+            var m = Math.floor((sleepSecondsLeft % 3600) / 60);
+            var s = sleepSecondsLeft % 60;
+            var display = "";
+            if (h > 0) display += h + "h ";
+            display += (m < 10 && h > 0 ? "0" : "") + m + "m ";
+            display += (s < 10 ? "0" : "") + s + "s";
+            var btn = document.getElementById("sleepTimerBtn");
+            btn.innerText = "⏱ " + display.trim() + " — Tap to Cancel";
+            btn.classList.add("active");
+        }
+        
+        function startFadeOut() {
+            var player = document.getElementById("globalPlayer");
+            var steps = 30;
+            var stepSize = player.volume / steps;
+            sleepFadeInterval = setInterval(function() {
+                if (player.volume > stepSize) {
+                    player.volume = Math.max(0, player.volume - stepSize);
+                } else {
+                    player.volume = 0;
+                    clearInterval(sleepFadeInterval);
+                }
             }, 1000);
         }
         
@@ -781,12 +811,6 @@
         
         function cancelTimer() {
             resetTimer();
-        }
-
-        function checkTimerInputs() {
-            var hours = parseInt(document.getElementById("timerHours").value);
-            var minutes = parseInt(document.getElementById("timerMinutes").value);
-            document.getElementById("timerSetBtn").disabled = (hours === 0 && minutes === 0);
         }
         
     </script>
