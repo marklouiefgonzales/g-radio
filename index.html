@@ -14,8 +14,9 @@
 <!-- marksays: 6/18/26 Removed the link to other radio stations since that site is full of ads -- kinda defeats my ad-free minimalist approach -->
 <!-- marksays: 6/18/26 Added the timer feature, for whatever purpose it may serve. haha -->
 <!-- marksays: 6/18/26 Next, I want it to be able to handle network drops, panira sa listening vibes pag nag-gi-glitch ung host stream -->
-<!-- marksays: 6/18/26 Done. The app now handle network drops. Tries to reconnect for short drops. -->
-<!-- marksays: 6/18/26 But for long drops, app will just wait for connection/source to becomes available before trying to stream again. Else, will display "Stream Unavailable" -->
+<!-- marksays: 6/18/26 Done. The app now handle network drops. Stream drops → "⟳ Reconnecting..." → stream comes back → "● Now Playing" automatically  -->
+<!-- marksays: 6/18/26 Stream totally down → "⟳ Reconnecting..." → browser eventually gives up → "⚠ Stream Unavailable" -->
+<!-- marksays: 6/18/26 No active retries, no battery drain, no user action needed until stream becomes unavailable -->
 <!-- marksays: 6/18/26 Also added new function on sw.js to delete cache unconditionally to force app/browser to always use the latest code - hirap mag test pag nagccache e -->
     
 
