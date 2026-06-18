@@ -843,12 +843,21 @@
                     retryInterval = null;
                     return;
                 }
+        
+                // If already playing fine, stop retrying
+                if (player.readyState === 4 && !player.paused) {
+                    clearInterval(retryInterval);
+                    retryInterval = null;
+                    document.getElementById(statSelected).style.color = "#0084ff";
+                    document.getElementById(statSelected).innerText = "● Now Playing";
+                    return;
+                }
+        
+                // Still not recovered, reload
                 var currentSrc = player.src;
                 player.src = currentSrc;
                 player.load();
-                player.play().catch(function() {
-                    // still failing, keep retrying
-                });
+                player.play().catch(function() {});
             }, 5000);
         }
         
