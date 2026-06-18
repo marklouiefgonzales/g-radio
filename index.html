@@ -743,7 +743,7 @@
         }
         
         function startSleepTimer(seconds) {
-            cancelTimer();
+            resetTimer();
             sleepSecondsLeft = seconds;
             updateTimerBtn();
         
@@ -751,56 +751,36 @@
                 sleepSecondsLeft--;
                 updateTimerBtn();
                 if (sleepSecondsLeft === 30) startFadeOut();
-                if (sleepSecondsLeft <= 0) cancelTimer();
+                if (sleepSecondsLeft <= 0) timerExpired();
             }, 1000);
         }
         
-        function updateTimerBtn() {
-            var h = Math.floor(sleepSecondsLeft / 3600);
-            var m = Math.floor((sleepSecondsLeft % 3600) / 60);
-            var s = sleepSecondsLeft % 60;
-            var display = "";
-            if (h > 0) display += h + "h ";
-            display += (m < 10 && h > 0 ? "0" : "") + m + "m ";
-            display += (s < 10 ? "0" : "") + s + "s";
-            var btn = document.getElementById("sleepTimerBtn");
-            btn.innerText = "⏱ " + display.trim() + " — Tap to Cancel";
-            btn.classList.add("active");
-        }
-        
-        function startFadeOut() {
-            var player = document.getElementById("globalPlayer");
-            var steps = 30;
-            var stepSize = player.volume / steps;
-            sleepFadeInterval = setInterval(function() {
-                if (player.volume > stepSize) {
-                    player.volume = Math.max(0, player.volume - stepSize);
-                } else {
-                    player.volume = 0;
-                    clearInterval(sleepFadeInterval);
-                }
-            }, 1000);
-        }
-        
-        function cancelTimer() {
+        function resetTimer() {
             clearInterval(sleepCountdownInterval);
             clearInterval(sleepFadeInterval);
             sleepCountdownInterval = null;
             sleepFadeInterval = null;
             sleepSecondsLeft = 0;
-        
             var player = document.getElementById("globalPlayer");
             player.volume = 1;
+            var timerBtn = document.getElementById("sleepTimerBtn");
+            timerBtn.innerText = "⏱ Sleep Timer";
+            timerBtn.classList.remove("active");
+        }
+        
+        function timerExpired() {
+            resetTimer();
+            var player = document.getElementById("globalPlayer");
             player.pause();
             var btn = document.getElementById("masterPauseBtn");
             btn.innerHTML = '<div class="play-icon"></div>';
             btn.style.background = "#34c759";
             btn.style.boxShadow = "0 4px 12px rgba(52, 199, 89, 0.3)";
             document.getElementById(statSelected).innerText = "● Paused";
+        }
         
-            var timerBtn = document.getElementById("sleepTimerBtn");
-            timerBtn.innerText = "⏱ Sleep Timer";
-            timerBtn.classList.remove("active");
+        function cancelTimer() {
+            resetTimer();
         }
 
         function checkTimerInputs() {
