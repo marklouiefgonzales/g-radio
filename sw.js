@@ -17,10 +17,5 @@ self.addEventListener('activate', function(event) {
 });
 
 self.addEventListener('fetch', function(event) {
-    // Don't cache the splash image to prevent dimension issues
-    if (event.request.url.includes('iconF.png')) {
-        event.respondWith(fetch(event.request, { cache: 'no-store' }));
-        return;
-    }
     event.respondWith(fetch(event.request));
 });
