@@ -1,7 +1,7 @@
 {
   "name": "Gonzales Radio",
   "short_name": "G Radio",
-  "start_url": "/phillippine-radio/",
+  "start_url": "/g-radio/",
   "display": "standalone",
   "background_color": "#121212",
   "theme_color": "#0084ff",
